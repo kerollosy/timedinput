@@ -1,4 +1,17 @@
 # timedinput 
+<picture>
+  <img src="https://img.shields.io/pypi/v/timedinput">
+</picture>
+<picture>
+  <img src="https://img.shields.io/pypi/pyversions/timedinput">
+</picture>
+<picture>
+    <img src="https://img.shields.io/appveyor/build/kerollosy/timedinput">
+</picture>
+<picture>
+    <img src="https://img.shields.io/github/license/kerollosy/timedinput">
+</picture>
+
 A Python module that waits for a specified amount of time for user input. If no input is received within the given timeout period, the module sets the variable value as per the default or raises an exception. This module is similar to the [inputtimeout](https://pypi.org/project/inputimeout/) module, but with a few differences.
 
 ## Usage

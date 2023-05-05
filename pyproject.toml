@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "timedinput"
+version = "0.1.0"
+description = "Timeout for python inputs"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+  {name = "Kerollos Emad", email = "kerollos.em@gmail.com"}
+]
+keywords = ['input', 'stdin', 'timeout', 'console']
+classifiers = [
+    'Programming Language :: Python :: 3',
+    'Intended Audience :: Developers',
+    'Environment :: Console',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: POSIX :: Linux',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: MacOS',
+]
+
+[project.urls]
+"Source" = "https://github.com/kerollosy/timedinput"
+"Bug Tracker" = "https://github.com/kerollosy/timedinput/issues"
+
+[tool.tox]
+legacy_tox_ini = """
+    [tox]
+    min_version = 4.0
+    env_list =
+        py311
+        py310
+        py39
+        py38
+        py37
+
+    [testenv]
+    deps = pytest
+    commands = pytest tests/
+"""

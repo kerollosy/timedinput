@@ -1,12 +1,22 @@
 image:
   - Visual Studio 2019
 
+# Only build main branch and tags
+branches:
+  only:
+    - main
+    - /v\d+\.\d+\.\d+/
+
 environment:
   matrix:
-  - TOXENV: py37
-  - TOXENV: py38
-  - TOXENV: py39
+  - TOXENV: py314
+  - TOXENV: py313
+  - TOXENV: py312
+  - TOXENV: py311
   - TOXENV: py310
+  - TOXENV: py39
+  - TOXENV: py38
+  - TOXENV: py37
 
 build: off
 
@@ -14,4 +24,4 @@ install:
   - py -m pip install tox
 
 test_script:
-  - py -m tox
+  - py -m tox -e %TOXENV%

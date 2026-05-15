@@ -7,7 +7,8 @@ import warnings
 if sys.platform.startswith("win"):
     import msvcrt
 else:
-    import selectors
+    import readline  # noqa: F401 - readline is imported for its side effects on Unix
+    import signal
     import termios
 
 
@@ -89,34 +90,39 @@ def jupyter_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     return result[0]
 
 
-def posix_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
+def _timeout_handler(signum, frame):
+    """Signal handler that raises a timeout exception."""
+    raise TimeoutOccurred()
+
+
+def posix_timedinput(prompt='', timeout=5, default=None):
     """Timedinput for Unix operating systems"""
-    echo(prompt)
-    sel = selectors.DefaultSelector()
+    old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+    
     try:
-        sel.register(sys.stdin, selectors.EVENT_READ)
-        events = sel.select(timeout)
+        signal.setitimer(signal.ITIMER_REAL, timeout)
+        result = input(prompt)
+        return result
+
+    except TimeoutOccurred:
+        print()
+        
+        try:
+            termios.tcflush(sys.stdin, termios.TCIFLUSH)
+        except Exception:
+            pass
+            
+        if default is not None:
+            return default
+        raise
+        
+    except EOFError:
+        print()
+        raise
+        
     finally:
-        sel.close()
-
-    if events:
-        key, _ = events[0]
-        # readline() may return an empty string immediately
-        result = key.fileobj.readline()
-        if result:
-            return result.rstrip(LF)
-        raise EOFError
-
-    echo(LF)
-    # tcflush fails on non-TTY
-    try:
-        termios.tcflush(sys.stdin, termios.TCIFLUSH)
-    except Exception:
-        pass
-
-    if default is not None:
-        return default
-    raise TimeoutOccurred
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):

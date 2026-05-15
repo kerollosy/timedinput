@@ -37,4 +37,3 @@ classifiers = [
 
 [project.optional-dependencies]
 jupyter = ["ipywidgets", "jupyter-ui-poll"]
-"""

@@ -2,6 +2,7 @@
 
 import sys
 import time
+import warnings
 
 if sys.platform.startswith("win"):
     import msvcrt
@@ -20,27 +21,30 @@ CRLF = CR + LF
 
 
 class TimeoutOccurred(Exception):
-    """Gets raised when user doesn't enter
-    any input within the specified timeout and no default value is specified"""
+    """Raised when the user doesn't enter input within the specified timeout
+    and no default value was provided."""
 
 
 def echo(string):
-    """Prints a string"""
+    """Prints a string without a newline and flushes stdout immediately."""
     sys.stdout.write(string)
     sys.stdout.flush()
+
 
 def is_jupyter():
     """Detects if the code is running inside a Jupyter Notebook, Google Colab, or IPython."""
     if 'google.colab' in sys.modules:
         return True
-    
+
     try:
-        shell = get_ipython().__class__.__name__
-        if shell in ('ZMQInteractiveShell', 'Shell'):
-            return True
+        shell = get_ipython()
+        if shell is None:
+            return False
+        
+        return shell.__class__.__name__ in ('ZMQInteractiveShell', 'Shell')
+    except Exception:
         return False
-    except NameError:
-        return False
+
 
 def jupyter_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     """Timed input for Jupyter using jupyter_ui_poll."""
@@ -89,16 +93,19 @@ def posix_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     """Timedinput for Unix operating systems"""
     echo(prompt)
     sel = selectors.DefaultSelector()
-    sel.register(sys.stdin, selectors.EVENT_READ)
-    events = sel.select(timeout)
+    try:
+        sel.register(sys.stdin, selectors.EVENT_READ)
+        events = sel.select(timeout)
+    finally:
+        sel.close()
 
     if events:
         key, _ = events[0]
         # readline() may return an empty string immediately
         result = key.fileobj.readline()
-        if result: 
+        if result:
             return result.rstrip(LF)
-        # If result is empty string, we hit EOF, proceed to timeout logic
+        raise EOFError
 
     echo(LF)
     # tcflush fails on non-TTY
@@ -121,7 +128,12 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
 
     while time.monotonic() < end:
         if msvcrt.kbhit():
-            c = msvcrt.getwche()
+            c = msvcrt.getwch()
+
+            # User pressed extended key prefix (arrow keys, F-keys, etc.) 
+            if c in ('\x00', '\xe0'):
+                msvcrt.getwch()
+                continue
 
             # User pressed Enter
             if c in (CR, LF):
@@ -134,12 +146,14 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
 
             # User pressed Backspace
             if c == '\b':
-                line = line[:-1]
-                cover = SP * len(prompt + line + SP)
-                echo(''.join([CR, cover, CR, prompt, line]))
-
+                if line:  # only backspace if there's something to delete
+                    line = line[:-1]
+                    cover = SP * len(prompt + line + SP)
+                    echo(''.join([CR, cover, CR, prompt, line]))
             else:
                 line += c
+                echo(c)
+
         time.sleep(INTERVAL)
 
     echo(CRLF)
@@ -147,24 +161,53 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
         return default
     raise TimeoutOccurred
 
+
 def _fallback_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     """Fallback that consumes extra arguments but acts like standard input"""
     return input(prompt)
 
-if is_jupyter():
-    try:
-        import ipywidgets
-        import jupyter_ui_poll
-        timedinput = jupyter_timedinput
-    except ImportError:
-        import warnings
-        warnings.warn(
-            "For timeout support in Jupyter, you must install optional dependencies. "
-            "Run: %pip install ipywidgets jupyter-ui-poll. "
-            "Falling back to standard blocking input (no timeout)."
-        )
-        timedinput = _fallback_timedinput
-elif sys.platform.startswith("win"):
-    timedinput = win_timedinput
-else:
-    timedinput = posix_timedinput
+
+def timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
+    """Prompt the user for input with an optional timeout.
+
+    Automatically selects the correct implementation for the current platform
+    (Windows, POSIX, or Jupyter). If the user doesn't respond within the
+    timeout, either returns ``default`` or raises ``TimeoutOccurred``.
+
+    Args:
+        prompt (str): Message displayed before the input cursor. Defaults to ''.
+        timeout (float): Seconds to wait for input before timing out.
+            Defaults to 30.0.
+        default: Value to return if the timeout expires. If None and the
+            timeout expires, raises TimeoutOccurred. Defaults to None.
+
+    Returns:
+        str: The text entered by the user, or ``default`` if timed out.
+
+    Raises:
+        TimeoutOccurred: If the timeout expires and no default is provided.
+        KeyboardInterrupt: If the user presses Ctrl+C (Windows).
+        EOFError: If stdin is closed unexpectedly (POSIX).
+
+    Examples:
+        >>> answer = timedinput("Continue? [Y/n]: ", timeout=5, default="Y")
+        >>> name = timedinput("Enter your name: ", timeout=10)
+    """
+    if is_jupyter():
+        try:
+            import ipywidgets
+            import jupyter_ui_poll
+            return jupyter_timedinput(prompt, timeout, default)
+        except ImportError:
+            warnings.warn(
+                "For timeout support in Jupyter, install optional dependencies: "
+                "%pip install ipywidgets jupyter-ui-poll. "
+                "Falling back to standard blocking input (timeout and default ignored).",
+                stacklevel=2,
+            )
+            return _fallback_timedinput(prompt, timeout, default)
+
+    if sys.platform.startswith("win"):
+        return win_timedinput(prompt, timeout, default)
+
+    return posix_timedinput(prompt, timeout, default)

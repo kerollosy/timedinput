@@ -94,10 +94,18 @@ def posix_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
 
     if events:
         key, _ = events[0]
-        return key.fileobj.readline().rstrip(LF)
+        # readline() may return an empty string immediately
+        result = key.fileobj.readline()
+        if result: 
+            return result.rstrip(LF)
+        # If result is empty string, we hit EOF, proceed to timeout logic
 
     echo(LF)
-    termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    # tcflush fails on non-TTY
+    try:
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except Exception:
+        pass
 
     if default is not None:
         return default

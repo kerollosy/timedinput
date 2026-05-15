@@ -1,9 +1,9 @@
 """Timeout for python inputs"""
 
 import sys
+import time
 
 if sys.platform.startswith("win"):
-    import time
     import msvcrt
 else:
     import selectors
@@ -28,6 +28,57 @@ def echo(string):
     """Prints a string"""
     sys.stdout.write(string)
     sys.stdout.flush()
+
+def is_jupyter():
+    """Detects if the code is running inside a Jupyter Notebook, Google Colab, or IPython."""
+    if 'google.colab' in sys.modules:
+        return True
+    
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell in ('ZMQInteractiveShell', 'Shell'):
+            return True
+        return False
+    except NameError:
+        return False
+
+def jupyter_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
+    """Timed input for Jupyter using jupyter_ui_poll."""
+    import ipywidgets as widgets
+    from IPython.display import display
+    from jupyter_ui_poll import ui_events
+
+    result = [None]
+    done = [False]
+
+    label = widgets.Label(value=prompt)
+    text = widgets.Text(placeholder='Type and press Enter...')
+    box = widgets.VBox([label, text])
+
+    def on_submit(widget):
+        result[0] = widget.value
+        done[0] = True
+
+    text.on_submit(on_submit)
+    display(box)
+
+    start_time = time.monotonic()
+
+    with ui_events() as poll:
+        while not done[0]:
+            poll(10)
+            if time.monotonic() - start_time > timeout:
+                break
+            time.sleep(0.05)
+
+    box.close()
+
+    if not done[0]:
+        if default is not None:
+            return default
+        raise TimeoutOccurred
+
+    return result[0]
 
 
 def posix_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
@@ -84,8 +135,20 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
         return default
     raise TimeoutOccurred
 
-
-if sys.platform.startswith("win"):
+if is_jupyter():
+    try:
+        import ipywidgets
+        import jupyter_ui_poll
+        timedinput = jupyter_timedinput
+    except ImportError:
+        import warnings
+        warnings.warn(
+            "For timeout support in Jupyter, you must install optional dependencies. "
+            "Run: %pip install ipywidgets jupyter-ui-poll. "
+            "Falling back to standard blocking input (no timeout)."
+        )
+        timedinput = input
+elif sys.platform.startswith("win"):
     timedinput = win_timedinput
 else:
     timedinput = posix_timedinput

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "timedinput"
-version = "0.1.2"
+version = "1.0.0"
 description = "Timeout for python inputs"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -31,6 +31,9 @@ classifiers = [
 [project.urls]
 "Source" = "https://github.com/kerollosy/timedinput"
 "Bug Tracker" = "https://github.com/kerollosy/timedinput/issues"
+
+[project.optional-dependencies]
+jupyter = ["ipywidgets", "jupyter-ui-poll"]
 
 [tool.tox]
 legacy_tox_ini = """

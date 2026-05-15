@@ -125,14 +125,36 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     begin = time.monotonic()
     end = begin + timeout
     line = ''
+    pos = 0  # cursor position within line
+
+    def redraw():
+        # Reprint line from start, trailing ' \b' erases any leftover character
+        echo('\r' + prompt + line + ' \b')
+        back = len(line) - pos
+        if back:
+            echo('\b' * back)
 
     while time.monotonic() < end:
         if msvcrt.kbhit():
             c = msvcrt.getwch()
 
-            # User pressed extended key prefix (arrow keys, F-keys, etc.) 
             if c in ('\x00', '\xe0'):
-                msvcrt.getwch()
+                scan = msvcrt.getwch()
+                if scan == '\x4b' and pos > 0:            # Left arrow
+                    pos -= 1
+                    echo('\b')
+                elif scan == '\x4d' and pos < len(line):  # Right arrow
+                    echo(line[pos])
+                    pos += 1
+                elif scan == '\x47':                       # Home
+                    echo('\b' * pos)
+                    pos = 0
+                elif scan == '\x4f':                       # End
+                    echo(line[pos:])
+                    pos = len(line)
+                elif scan == '\x53' and pos < len(line):  # Delete key
+                    line = line[:pos] + line[pos + 1:]
+                    redraw()
                 continue
 
             # User pressed Enter
@@ -146,13 +168,14 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
 
             # User pressed Backspace
             if c == '\b':
-                if line:  # only backspace if there's something to delete
-                    line = line[:-1]
-                    cover = SP * len(prompt + line + SP)
-                    echo(''.join([CR, cover, CR, prompt, line]))
+                if pos > 0:
+                    line = line[:pos - 1] + line[pos:]
+                    pos -= 1
+                    redraw()
             else:
-                line += c
-                echo(c)
+                line = line[:pos] + c + line[pos:]
+                pos += 1
+                redraw()
 
         time.sleep(INTERVAL)
 
@@ -211,3 +234,7 @@ def timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
         return win_timedinput(prompt, timeout, default)
 
     return posix_timedinput(prompt, timeout, default)
+
+
+answer = timedinput("Continue? [Y/n]: ", timeout=5, default="Y")
+print(f"You entered: {answer}")

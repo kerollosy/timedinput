@@ -240,5 +240,6 @@ def timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     return posix_timedinput(prompt, timeout, default)
 
 
-answer = timedinput("Continue? [Y/n]: ", timeout=5, default="Y")
-print(f"You entered: {answer}")
+if __name__ == "__main__":
+    answer = timedinput("Continue? [Y/n]: ", timeout=5, default="Y")
+    print(f"You entered: {answer}")

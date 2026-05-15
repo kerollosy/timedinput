@@ -44,7 +44,7 @@ def posix_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     echo(LF)
     termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
-    if default:
+    if default is not None:
         return default
     raise TimeoutOccurred
 
@@ -80,7 +80,7 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
         time.sleep(INTERVAL)
 
     echo(CRLF)
-    if default:
+    if default is not None:
         return default
     raise TimeoutOccurred
 

@@ -26,12 +26,6 @@ class TimeoutOccurred(Exception):
     and no default value was provided."""
 
 
-def echo(string):
-    """Prints a string without a newline and flushes stdout immediately."""
-    sys.stdout.write(string)
-    sys.stdout.flush()
-
-
 def is_jupyter():
     """Detects if the code is running inside a Jupyter Notebook, Google Colab, or IPython."""
     if 'google.colab' in sys.modules:
@@ -77,6 +71,7 @@ def jupyter_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
         while not done[0]:
             poll(10)
             if time.monotonic() - start_time > timeout:
+                done[0] = False
                 break
             time.sleep(0.05)
 
@@ -106,7 +101,7 @@ def posix_timedinput(prompt='', timeout=5, default=None):
 
     except TimeoutOccurred:
         print()
-        
+
         try:
             termios.tcflush(sys.stdin, termios.TCIFLUSH)
         except Exception:
@@ -123,6 +118,11 @@ def posix_timedinput(prompt='', timeout=5, default=None):
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, old_handler)
+
+
+def echo(string):
+    """Prints a string without a newline and flushes stdout immediately."""
+    print(string, end="", flush=True)
 
 
 def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
@@ -191,7 +191,7 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     raise TimeoutOccurred
 
 
-def _fallback_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
+def _fallback_timedinput(prompt='', _timeout=DEFAULT_TIMEOUT, _default=None):
     """Fallback that consumes extra arguments but acts like standard input"""
     return input(prompt)
 

@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/timedinput.svg)](https://pypi.org/project/timedinput/)
 [![Python versions](https://img.shields.io/pypi/pyversions/timedinput.svg)](https://pypi.org/project/timedinput/)
-[![Build status](https://img.shields.io/appveyor/build/kerollosy/timedinput.svg)](https://ci.appveyor.com/project/kerollosy/timedinput)
+[![Tests](https://github.com/kerollosy/timedinput/actions/workflows/tests.yml/badge.svg)](https://github.com/kerollosy/timedinput/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/kerollosy/timedinput.svg)](https://github.com/kerollosy/timedinput/blob/main/LICENSE)
 
 A Python module that waits for a specified amount of time for user input. If no input is received within the given timeout period, the module returns a default value or raises an exception. 

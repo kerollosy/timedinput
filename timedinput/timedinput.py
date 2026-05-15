@@ -52,14 +52,18 @@ def jupyter_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     done = [False]
 
     label = widgets.Label(value=prompt)
-    text = widgets.Text(placeholder='Type and press Enter...')
+    
+    # Add continuous_update=False so it only triggers on Enter
+    text = widgets.Text(placeholder='Type and press Enter...', continuous_update=False)
     box = widgets.VBox([label, text])
 
-    def on_submit(widget):
-        result[0] = widget.value
+    # The callback now receives a 'change' dictionary instead of the widget itself
+    def on_submit(change):
+        result[0] = change['new'] # Grab the newly typed text
         done[0] = True
 
-    text.on_submit(on_submit)
+    # Use observe to watch for changes to the 'value'
+    text.observe(on_submit, names='value')
     display(box)
 
     start_time = time.monotonic()

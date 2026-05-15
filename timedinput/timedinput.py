@@ -32,7 +32,7 @@ def is_jupyter():
         return True
 
     try:
-        shell = get_ipython()
+        shell = get_ipython() # noqa: F821 - get_ipython is a special function available in IPython environments
         if shell is None:
             return False
         
@@ -224,8 +224,6 @@ def timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
     """
     if is_jupyter():
         try:
-            import ipywidgets
-            import jupyter_ui_poll
             return jupyter_timedinput(prompt, timeout, default)
         except ImportError:
             warnings.warn(

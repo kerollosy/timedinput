@@ -135,6 +135,10 @@ def win_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
         return default
     raise TimeoutOccurred
 
+def _fallback_timedinput(prompt='', timeout=DEFAULT_TIMEOUT, default=None):
+    """Fallback that consumes extra arguments but acts like standard input"""
+    return input(prompt)
+
 if is_jupyter():
     try:
         import ipywidgets
@@ -147,7 +151,7 @@ if is_jupyter():
             "Run: %pip install ipywidgets jupyter-ui-poll. "
             "Falling back to standard blocking input (no timeout)."
         )
-        timedinput = input
+        timedinput = _fallback_timedinput
 elif sys.platform.startswith("win"):
     timedinput = win_timedinput
 else:

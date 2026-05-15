@@ -42,6 +42,7 @@ jupyter = ["ipywidgets", "jupyter-ui-poll"]
 legacy_tox_ini = """
     [tox]
     min_version = 4.0
+    skip_missing_interpreters = true
     env_list =
         py314
         py313

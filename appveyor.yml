@@ -24,4 +24,4 @@ install:
   - py -m pip install tox
 
 test_script:
-  - py -m tox
+  - py -m tox -e %TOXENV%
